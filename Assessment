@@ -1,0 +1,138 @@
+Flask and MongoDB Assessment:
+
+1.	Create a Flask application with an /api route. When this route is accessed, it should return a JSON list. The data should be stored in a backend file, read from it, and sent as a response.
+
+Answer:  
+creating an /api route that returns JSON
+
+from flask import Flask, jsonify
+import json
+app = Flask(__name__)
+@app.route('/')
+def home():
+    return "Welcome to the Flask App!"
+@app.route('/api')
+def api():
+    try:
+        # Read data from file
+        with open('data.json', 'r') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except FileNotFoundError:
+        return jsonify({"error": "data.json file not found"}), 404
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON format"}), 500
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+Create data.json file in the same folder:
+
+[
+    {"id": 1, "name": "Divyanshu", "grade": "A"},
+    {"id": 2, "name": "Aman", "grade": "B"}
+]
+Test:
+http://127.0.0.1:5000/api
+OR
+http://192.168.31.97:5000/api
+
+You should see a proper JSON response:
+
+[
+  {"id": 1, "name": "Divyanshu", "grade": "A"},
+  {"id": 2, "name": "Aman", "grade": "B"}
+]
+
+
+ 
+
+ 
+
+ 
+
+
+
+
+2.	Create a form on the frontend that, when submitted, inserts data into MongoDB Atlas. Upon successful submission, the user should be redirected to another page displaying the message "Data submitted successfully". If there's an error during submission, display the error on the same page without redirection.
+Answer:
+
+from flask import Flask, render_template, request, redirect, url_for
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+
+app = Flask(__name__)
+
+# MongoDB Atlas connection
+client = MongoClient("mongodb+srv://divyanshuchauhan1200:<JtnPetGHcHobgqTG>@cluster0.v7zfish.mongodb.net/myDB?retryWrites=true&w=majority")
+db = client['myDB']
+collection = db['submissions']
+
+@app.route('/', methods=['GET', 'POST'])
+def form():
+    error = None
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+
+        try:
+            collection.insert_one({'name': name, 'email': email})
+            return redirect(url_for('success'))
+        except PyMongoError as e:
+            error = f"Error submitting data: {str(e)}"
+
+    return render_template('form.html', error=error)
+
+@app.route('/success')
+def success():
+    return render_template('success.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+FORM.html
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Data</title>
+</head>
+<body>
+    <h1>Submit Your Info</h1>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="POST">
+        <label>Name:</label>
+        <input type="text" name="name" required><br><br>
+        <label>Email:</label>
+        <input type="email" name="email" required><br><br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
+
+SUCCESS.html
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Success</title>
+</head>
+<body>
+    <h1>Data submitted successfully!</h1>
+    <a href="/">Submit another</a>
+</body>
+</html>
+
+
